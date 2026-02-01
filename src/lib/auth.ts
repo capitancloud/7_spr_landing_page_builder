@@ -20,6 +20,19 @@ export async function hashCode(code: string): Promise<string> {
   return hashHex;
 }
 
+// Normalizza l'input utente prima dell'hash.
+// Serve a gestire casi comuni quando si incolla un codice:
+// - spazi iniziali/finali
+// - NBSP (spazio "speciale")
+// - caratteri invisibili (zero-width)
+// - differenze Unicode equivalenti (normalize)
+function normalizeAccessCode(input: string): string {
+  return input
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+    .trim();
+}
+
 // L'hash pre-calcolato del codice di accesso corretto
 // Questo è l'hash SHA-256 di: gT6@Qp!R1Z$uN9e#X^cD2sL%hY&vJm*W+K7B~A=F4q-Uo_rP)k8S]3C0{I?E
 // In questo modo il codice originale NON è mai memorizzato nel codice sorgente!
@@ -27,7 +40,8 @@ export const VALID_CODE_HASH = "f0e4c2f76c58916ec252921922247a9e612811770051202c
 
 // Funzione per verificare se il codice inserito è corretto
 export async function verifyCode(inputCode: string): Promise<boolean> {
-  const inputHash = await hashCode(inputCode);
+  const normalized = normalizeAccessCode(inputCode);
+  const inputHash = await hashCode(normalized);
   // Confrontiamo gli hash, non i codici in chiaro
   return inputHash === VALID_CODE_HASH;
 }
